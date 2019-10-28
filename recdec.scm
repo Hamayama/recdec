@@ -1,7 +1,7 @@
 ;; -*- coding: utf-8 -*-
 ;;
 ;; recdec.scm
-;; 2019-10-28 v1.00
+;; 2019-10-28 v1.01
 ;;
 ;; ＜内容＞
 ;;   Gauche で、有理数と循環小数の相互変換を行うためのモジュールです。
@@ -17,8 +17,8 @@
 (select-module recdec)
 
 ;; 循環部分の範囲を示す記号
-(define *rec-frac-start-char* #\{) ; 始点
-(define *rec-frac-end-char*   #\}) ; 終点
+(define *rec-start-char* #\{) ; 始点
+(define *rec-end-char*   #\}) ; 終点
 
 ;; 有理数を循環小数の文字列に変換する
 ;;   ・循環部分の範囲は記号で囲う
@@ -60,11 +60,11 @@
               (set! n (* r 10))
               (set! q (quotient  n d))
               (set! r (remainder n d))
-              (when (= i start) (display *rec-frac-start-char*))
+              (when (= i start) (display *rec-start-char*))
               (display (integer->digit q))
               (cond
                ((= r 0))
-               ((= i end) (display *rec-frac-end-char*))
+               ((= i end) (display *rec-end-char*))
                (else      (inc! i) (loop))))))))))
 
 
@@ -178,7 +178,7 @@
               (case c
                 ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
                 (else
-                 (if (eqv? c *rec-frac-start-char*)
+                 (if (eqv? c *rec-start-char*)
                    (begin (set! rec-index i) (inc! mode))
                    (set! err-flag #t)))))
              ;; 循環小数部のチェック
@@ -186,7 +186,7 @@
               (case c
                 ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
                 (else
-                 (if (eqv? c *rec-frac-end-char*)
+                 (if (eqv? c *rec-end-char*)
                    (begin (set! end-index i) (set! mode 10))
                    (set! err-flag #t)))))
              ;; 終端のチェック
