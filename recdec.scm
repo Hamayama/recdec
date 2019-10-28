@@ -1,7 +1,7 @@
 ;; -*- coding: utf-8 -*-
 ;;
 ;; recdec.scm
-;; 2019-10-28 v1.01
+;; 2019-10-28 v1.02
 ;;
 ;; ＜内容＞
 ;;   Gauche で、有理数と循環小数の相互変換を行うためのモジュールです。
@@ -35,16 +35,17 @@
     (error "nan is not supported:" num))
   ;; 正確数に変換
   (set! num (exact num))
-  ;; 文字列の出力
-  (with-output-to-string
-    (lambda ()
-      (let* ((minus (< num 0))              ; マイナス符号フラグ
-             (num1  (if minus (- num) num)) ; 符号をプラスにする
-             (n     (numerator   num1))     ; 有理数の分子
-             (d     (denominator num1))     ; 有理数の分母
-             (q     (quotient  n d))        ; 商
-             (r     (remainder n d))        ; 余り
-             (i     0))                     ; 小数部の位置
+  ;; 有理数を循環小数の文字列に変換する
+  (let* ((minus (< num 0))              ; マイナス符号フラグ
+         (num1  (if minus (- num) num)) ; 符号をプラスにする
+         (n     (numerator   num1))     ; 有理数の分子
+         (d     (denominator num1))     ; 有理数の分母
+         (q     (quotient  n d))        ; 商
+         (r     (remainder n d))        ; 余り
+         (i     0))                     ; 小数部の位置
+    ;; 文字列の出力
+    (with-output-to-string
+      (lambda ()
         ;; 整数部の出力
         (if minus (display #\-))
         (display q)
@@ -112,7 +113,7 @@
     ;; 分解できなかったとき
     (unless split-ok
       (error "couldn't convert:" num-st))
-    ;; 有理数に変換
+    ;; 有理数に変換する
     (let ((int-num  (x->integer int-st))     ; 整数部
           (frac-num (x->integer frac-st))    ; 小数部
           (rec-num  (x->integer rec-st))     ; 循環小数部
