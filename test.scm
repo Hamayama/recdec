@@ -76,7 +76,7 @@
 (expr-test ""   679/55      (recdec->real "12.3{45}"))
 (expr-test ""  -679/55      (recdec->real "-12.3{45}"))
 
-(test-section "real->recdec long pattern")
+(test-section "recdec->real long pattern")
 (expr-test "" 1/243243243
            (recdec->real "0.{000000004111111115222222226333333337444444448555555559666666670777777781888888893}"))
 (expr-test "" 1/254165489974583451
