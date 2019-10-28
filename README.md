@@ -46,7 +46,7 @@
 
 ## 参考情報
 1. 特徴的なパターンの循環節を持つ循環小数  
-   http://www.asahi-net.or.jp/~kc2h-msm/mathland/math05/math0506.htm
+   https://www.asahi-net.or.jp/~kc2h-msm/mathland/math05/math0506.htm
 
 
 ## 環境等
