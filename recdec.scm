@@ -1,7 +1,7 @@
 ;; -*- coding: utf-8 -*-
 ;;
 ;; recdec.scm
-;; 2019-10-29 v1.03
+;; 2019-10-30 v1.04
 ;;
 ;; ＜内容＞
 ;;   Gauche で、有理数と循環小数の相互変換を行うためのモジュールです。
@@ -25,8 +25,8 @@
 ;;       例. 0.123454545 ... ==> "0.123{45}"
 ;;   num             数値
 ;;   :rdx radix      出力の基数
-;;   :bc1 basechar1  出力の 0を示す文字
-;;   :bc2 basechar2  出力の10を示す文字(基数が11以上のときに使用)
+;;   :bc1 basechar1  出力の 0を表す文字
+;;   :bc2 basechar2  出力の10を表す文字(基数が11以上のときに使用)
 (define (real->recdec num
                       :key ((:rdx radix) 10)
                       ((:bc1 basechar1) #\0)
@@ -126,7 +126,7 @@
 (define (recdec->real num-st
                       :key ((:rdx radix) 10)
                       ((:exr extended-range?) #f))
-  ;; 数値変換手続き
+  ;; 数値変換手続き(基数に対応)
   (define (to-number num-st radix extended-range?)
     (when extended-range?
       (set! num-st (string-map
@@ -169,6 +169,9 @@
 ;;   ・符号部、整数部、小数部、循環小数部の文字列に分解する
 ;;   ・循環部分の範囲は記号で囲われていること
 ;;       例. "0.123{45}"
+;;   num-st           数値文字列
+;;   radix            入力の基数
+;;   extended-range?  UnicodeのNdカテゴリの文字を受け付けるかどうか
 (define (%split-recdec-str num-st radix extended-range?)
   (let ((num-len    (string-length num-st)) ; 数値文字列の長さ
         (sign-flag  #f) ; 符号の有無
