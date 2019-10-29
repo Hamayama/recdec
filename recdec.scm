@@ -1,7 +1,7 @@
 ;; -*- coding: utf-8 -*-
 ;;
 ;; recdec.scm
-;; 2019-10-28 v1.02
+;; 2019-10-29 v1.03
 ;;
 ;; ＜内容＞
 ;;   Gauche で、有理数と循環小数の相互変換を行うためのモジュールです。
@@ -10,7 +10,7 @@
 ;;   https://github.com/Hamayama/recdec
 ;;
 (define-module recdec
-  (use srfi-13) ; string-for-each,string-trim-both用
+  (use srfi-13) ; string-for-each,string-map,string-trim-both用
   (export
     real->recdec
     recdec->real))
@@ -23,7 +23,14 @@
 ;; 有理数を循環小数の文字列に変換する
 ;;   ・循環部分の範囲は記号で囲う
 ;;       例. 0.123454545 ... ==> "0.123{45}"
-(define (real->recdec num)
+;;   num             数値
+;;   :rdx radix      出力の基数
+;;   :bc1 basechar1  出力の 0を示す文字
+;;   :bc2 basechar2  出力の10を示す文字(基数が11以上のときに使用)
+(define (real->recdec num
+                      :key ((:rdx radix) 10)
+                      ((:bc1 basechar1) #\0)
+                      ((:bc2 basechar2) #\a))
   ;; 引数のチェック
   (unless (number? num)
     (error "number required, but got:" num))
@@ -33,6 +40,7 @@
     (error "infinite number is not supported:" num))
   (when (nan? num)
     (error "nan is not supported:" num))
+  (integer->digit 1 radix basechar1 basechar2)
   ;; 正確数に変換
   (set! num (exact num))
   ;; 有理数を循環小数の文字列に変換する
@@ -48,21 +56,32 @@
       (lambda ()
         ;; 整数部の出力
         (if minus (display #\-))
-        (display q)
+        (cond
+         ((and (= radix 10) (eqv? basechar1 #\0))
+          (display q))
+         ((and (eqv? basechar1 #\0)
+               (or (<= radix 10) (eqv? basechar2 #\a)))
+          (display (number->string q radix)))
+         (else
+          (string-for-each
+           (lambda (c) (display (integer->digit
+                                 (digit->integer c radix)
+                                 radix basechar1 basechar2)))
+           (number->string q radix))))
         ;; 小数のとき
         (unless (= r 0)
           ;; 小数点の出力
           (display #\.)
           ;; 循環部分の範囲を求める
           (receive (start end)
-              (%get-rec-range r (lambda (r) (remainder (* r 10) d)))
+              (%get-rec-range r (lambda (r) (remainder (* r radix) d)))
             ;; 小数部の各桁を求めて出力
             (let loop ()
-              (set! n (* r 10))
+              (set! n (* r radix))
               (set! q (quotient  n d))
               (set! r (remainder n d))
               (when (= i start) (display *rec-start-char*))
-              (display (integer->digit q))
+              (display (integer->digit q radix basechar1 basechar2))
               (cond
                ((= r 0))
                ((= i end) (display *rec-end-char*))
@@ -101,32 +120,47 @@
 ;; 循環小数の文字列を有理数に変換する
 ;;   ・循環部分の範囲は記号で囲われていること
 ;;       例. "0.123{45}"
-(define (recdec->real num-st)
+;;   num-st                数値文字列
+;;   :rdx radix            入力の基数
+;;   :exr extended-range?  UnicodeのNdカテゴリの文字を受け付けるかどうか
+(define (recdec->real num-st
+                      :key ((:rdx radix) 10)
+                      ((:exr extended-range?) #f))
+  ;; 数値変換手続き
+  (define (to-number num-st radix extended-range?)
+    (when extended-range?
+      (set! num-st (string-map
+                    (lambda (c) (integer->digit
+                                 (digit->integer c radix #t)
+                                 radix))
+                    num-st)))
+    (or (string->number num-st radix) 0))
   ;; 引数のチェック
   (unless (string? num-st)
     (error "string required, but got:" num-st))
+  (digit->integer #\1 radix extended-range?)
   ;; 前後の空白の削除
   (set! num-st (string-trim-both num-st))
   ;; 循環小数の文字列の分解
   (receive (split-ok sign-st int-st frac-st rec-st)
-      (%split-recdec-str num-st)
+      (%split-recdec-str num-st radix extended-range?)
     ;; 分解できなかったとき
     (unless split-ok
       (error "couldn't convert:" num-st))
     ;; 有理数に変換する
-    (let ((int-num  (x->integer int-st))     ; 整数部
-          (frac-num (x->integer frac-st))    ; 小数部
-          (rec-num  (x->integer rec-st))     ; 循環小数部
+    (let ((int-num  (to-number int-st  radix extended-range?)) ; 整数部
+          (frac-num (to-number frac-st radix extended-range?)) ; 小数部
+          (rec-num  (to-number rec-st  radix extended-range?)) ; 循環小数部
           (frac-len (string-length frac-st)) ; 小数部の桁数
           (rec-len  (string-length rec-st))  ; 循環小数部の桁数
           (rec-sum  0)                       ; 循環小数部の計算値
           (ret      0))                      ; 結果
       ;; 無限等比級数の和を計算
       (unless (or (= rec-num 0) (= rec-len 0))
-        (set! rec-sum (/ rec-num (- (expt 10 rec-len) 1))))
+        (set! rec-sum (/ rec-num (- (expt radix rec-len) 1))))
       ;; 全体を計算 (整数部 + 小数部 + 循環小数部)
       (set! ret (+ int-num
-                   (* (expt 10 (- frac-len))
+                   (* (expt radix (- frac-len))
                       (+ frac-num rec-sum))))
       (if (equal? sign-st "-") (- ret) ret))))
 
@@ -135,7 +169,7 @@
 ;;   ・符号部、整数部、小数部、循環小数部の文字列に分解する
 ;;   ・循環部分の範囲は記号で囲われていること
 ;;       例. "0.123{45}"
-(define (%split-recdec-str num-st)
+(define (%split-recdec-str num-st radix extended-range?)
   (let ((num-len    (string-length num-st)) ; 数値文字列の長さ
         (sign-flag  #f) ; 符号の有無
         (zero-flag  #f) ; 先頭のゼロの有無
@@ -165,31 +199,28 @@
                 (else  (inc! mode) (loop))))
              ;; 先頭のゼロのスキップ
              ((1)
-              (case c
-                ((#\0) (set! zero-flag #t))
-                (else  (set! int-index i) (inc! mode) (loop))))
+              (cond
+               ((eqv? (digit->integer c radix extended-range?) 0)
+                (set! zero-flag #t))
+               (else (set! int-index i) (inc! mode) (loop))))
              ;; 整数部のチェック
              ((2)
-              (case c
-                ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                ((#\.) (set! frac-index i) (inc! mode))
-                (else  (set! err-flag #t))))
+              (cond
+               ((digit->integer c radix extended-range?))
+               ((eqv? c #\.) (set! frac-index i) (inc! mode))
+               (else (set! err-flag #t))))
              ;; 小数部のチェック
              ((3)
-              (case c
-                ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                (else
-                 (if (eqv? c *rec-start-char*)
-                   (begin (set! rec-index i) (inc! mode))
-                   (set! err-flag #t)))))
+              (cond
+               ((digit->integer c radix extended-range?))
+               ((eqv? c *rec-start-char*) (set! rec-index i) (inc! mode))
+               (else (set! err-flag #t))))
              ;; 循環小数部のチェック
              ((4)
-              (case c
-                ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
-                (else
-                 (if (eqv? c *rec-end-char*)
-                   (begin (set! end-index i) (set! mode 10))
-                   (set! err-flag #t)))))
+              (cond
+               ((digit->integer c radix extended-range?))
+               ((eqv? c *rec-end-char*) (set! end-index i) (set! mode 10))
+               (else (set! err-flag #t))))
              ;; 終端のチェック
              ((10)
               (set! err-flag #t))
