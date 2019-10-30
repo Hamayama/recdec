@@ -65,7 +65,7 @@
 (expr-test "" (test-error <error>) (real->recdec 1+2i))
 (expr-test "" (test-error <error>) (real->recdec +inf.0))
 (expr-test "" (test-error <error>) (real->recdec +nan.0))
-(expr-test "" (test-error <error>) (real->recdec 1/7  :rdx 1))
+(expr-test "" (test-error <error>) (real->recdec  1/7 :rdx  1))
 (expr-test "" (test-error <error>) (real->recdec -1/7 :rdx 37))
 
 (test-section "recdec->real")
@@ -117,7 +117,7 @@
 (expr-test "" (test-error <error>) (recdec->real "+."))
 (expr-test "" (test-error <error>) (recdec->real "+.{"))
 (expr-test "" (test-error <error>) (recdec->real "+.{}"))
-(expr-test "" (test-error <error>) (recdec->real "0"  :rdx 1))
+(expr-test "" (test-error <error>) (recdec->real "0"  :rdx  1))
 (expr-test "" (test-error <error>) (recdec->real "-1" :rdx 37))
 
 ;; summary
