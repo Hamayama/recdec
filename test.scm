@@ -12,11 +12,11 @@
 (define-syntax expr-test
   (syntax-rules ()
     ((_ txt ans expr)
-     (test* (string-append txt (if (equal? txt "") "" " ")
-                           ": " (format "~s" 'expr)) ans expr))
+     (test* (format "~a~a: ~s" txt (if (equal? txt "") "" " ") 'expr)
+            ans expr))
     ((_ txt ans expr chk)
-     (test* (string-append txt (if (equal? txt "") "" " ")
-                           ": " (format "~s" 'expr)) ans expr chk))))
+     (test* (format "~a~a: ~s" txt (if (equal? txt "") "" " ") 'expr)
+            ans expr chk))))
 
 (test-section "real->recdec")
 (expr-test "" "0"            (real->recdec  0))
