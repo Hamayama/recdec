@@ -1,7 +1,7 @@
 ;; -*- coding: utf-8 -*-
 ;;
 ;; recdec.scm
-;; 2019-10-30 v1.04
+;; 2019-12-14 v1.05
 ;;
 ;; ＜内容＞
 ;;   Gauche で、有理数と循環小数の相互変換を行うためのモジュールです。
@@ -49,8 +49,7 @@
          (n     (numerator   num1))     ; 有理数の分子
          (d     (denominator num1))     ; 有理数の分母
          (q     (quotient  n d))        ; 商
-         (r     (remainder n d))        ; 余り
-         (i     0))                     ; 小数部の位置
+         (r     (remainder n d)))       ; 余り
     ;; 文字列の出力
     (with-output-to-string
       (lambda ()
@@ -76,7 +75,7 @@
           (receive (start end)
               (%get-rec-range r (lambda (r) (remainder (* r radix) d)))
             ;; 小数部の各桁を求めて出力
-            (let loop ()
+            (let loop ((i 0))
               (set! n (* r radix))
               (set! q (quotient  n d))
               (set! r (remainder n d))
@@ -85,7 +84,7 @@
               (cond
                ((= r 0))
                ((= i end) (display *rec-end-char*))
-               (else      (inc! i) (loop))))))))))
+               (else      (loop (+ i 1)))))))))))
 
 
 ;; 循環部分の範囲を求める(フロイドの循環検出法)(内部処理用)
